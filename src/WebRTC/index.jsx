@@ -7,7 +7,7 @@ class WebRTC extends Component {
         super();
         this.state = {
             mySdpId: null,
-            otherSdpId: null, 
+            otherSdpId: null,
             peer: new Peer({
                 initiator: false,
                 trickle: false
@@ -17,16 +17,16 @@ class WebRTC extends Component {
 
     componentDidMount() {
         this.onConnect();
+        this.onReciveMessage();
     }
 
-    onConnect(){
-        this.state.peer.on('signal',(data) => {
+    onConnect() {
+        this.state.peer.on('signal', (data) => {
             console.log(data);
-            this.setState({mySdpId: data})
+            this.setState({ mySdpId: data })
             console.log('polaczono');
         });
     }
-
 
     onInit() {
         const peer = new Peer({
@@ -34,7 +34,7 @@ class WebRTC extends Component {
             trickle: false
         });
 
-        this.setState({peer: peer});
+        this.setState({ peer: peer });
 
         peer.on('signal', (data) => {
             this.setState({ mySdpId: data });
@@ -53,6 +53,15 @@ class WebRTC extends Component {
         }
     }
 
+    onSendMessage() {
+        console.log('send message');
+        this.state.peer.send('wiadomosc');
+    }
+    onReciveMessage() {
+        this.state.peer.on('data', function (data) {
+            alert(data);
+        });
+    }
     render() {
 
         const mySDP = JSON.stringify(this.state.mySdpId);
@@ -69,6 +78,7 @@ class WebRTC extends Component {
                 <textarea id="otherId" onChange={(e) => this.onChangeOtherId(e)}>{this.state.something}</textarea><br />
                 <button onClick={() => this.onConnect()}>Connect</button>
 
+                <input type="text" /><button onClick={() => this.onSendMessage()}> send message</button>
             </div>
         );
     }
