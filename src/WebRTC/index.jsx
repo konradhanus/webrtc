@@ -14,8 +14,8 @@ class WebRTC extends Component {
             peer: new Peer({
                 initiator: false,
                 trickle: false
-            }), 
-            firebase: { users: firebase.database().ref('users')},
+            }),
+            firebase: { users: firebase.database() },
             users: null
         }
     }
@@ -24,10 +24,10 @@ class WebRTC extends Component {
         this.setState({ name: e.target.value });
     }
 
-    onGetUsers(){
-        this.state.firebase.users.on('value', (snapshot) => {
+    onGetUsers() {
+        this.state.firebase.users.ref('users').on('value', (snapshot) => {
             const newUsers = snapshot.val();
-            this.setState({users: newUsers})
+            this.setState({ users: newUsers })
         })
     }
 
@@ -36,14 +36,14 @@ class WebRTC extends Component {
         this.setState({ logged: true });
 
         //add me to firebase
-        const users = this.state.firebase.users;
+        const users = this.state.firebase.users.ref('users');
 
         console.log(users);
         const user = {
             name: this.state.name
         }
 
-      
+
 
         users.push(user);
     }
@@ -63,6 +63,21 @@ class WebRTC extends Component {
         });
     }
 
+    onConnectionRequest(userId, name){ 
+        const peer = new Peer({
+            initiator: true,
+            trickle: false
+        });
+
+        this.setState({ peer: peer });
+
+        peer.on('signal', (data) => {
+            this.setState({ mySdpId: data });
+            const users =  this.state.firebase.users.ref('users/'+userId);
+            users.set({name: name, connectionRequest: this.state.mySdpId});
+        });
+    }
+    
     onInit() {
         const peer = new Peer({
             initiator: true,
@@ -92,6 +107,7 @@ class WebRTC extends Component {
         console.log('send message');
         this.state.peer.send('wiadomosc');
     }
+
     onReciveMessage() {
         this.state.peer.on('data', function (data) {
             alert(data);
@@ -123,10 +139,11 @@ class WebRTC extends Component {
                     <textarea id="otherId" onChange={(e) => this.onChangeOtherId(e)}>{this.state.something}</textarea><br />
                     <button onClick={() => this.onConnect()}>Connect</button>
                     <input type="text" /><button onClick={() => this.onSendMessage()}> send message</button>
- {/* wylistować urzytkownikow */}
-                    {Object.keys(this.state.users).map((user, key) => {console.log(user)})}
-                </div>
-            );
+                    {/* wylistować urzytkownikow */}
+                    <ul>
+                        {this.state.users ? Object.keys(this.state.users).map((userId, key) => <li onClick={() => this.onConnectionRequest(userId, this.state.users[userId].name)} key={key}>{this.state.users[userId].name}</li>) : null}
+                    </ul>
+                </div>);
         }
 
     }
