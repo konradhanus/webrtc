@@ -16,8 +16,10 @@ class WebRTC extends Component {
                 trickle: false
             }),
             firebase: { users: firebase.database() },
-            users: null, 
-            myFirebaseKey: null
+            users: null,
+            myFirebaseKey: null, 
+            calling: false,
+            caller: null
         }
     }
 
@@ -44,10 +46,10 @@ class WebRTC extends Component {
             name: this.state.name
         }
 
-
         // Get a key for a new Post.
         var newUserKey = users.push(user).key;
-        this.setState({myFirebaseKey: newUserKey});
+        this.setState({ myFirebaseKey: newUserKey });
+        this.onCalling(newUserKey);
         //users.push(user);
     }
 
@@ -56,7 +58,7 @@ class WebRTC extends Component {
         this.onGetUsers();
         this.onConnect();
         this.onReciveMessage();
-        this.onCalling();
+       
     }
 
     onConnect() {
@@ -67,7 +69,7 @@ class WebRTC extends Component {
         });
     }
 
-    onConnectionRequest(userId, name){ 
+    onConnectionRequest(userId, name) {
         const peer = new Peer({
             initiator: true,
             trickle: false
@@ -77,11 +79,11 @@ class WebRTC extends Component {
 
         peer.on('signal', (data) => {
             this.setState({ mySdpId: data });
-            const users =  this.state.firebase.users.ref('users/'+userId);
-            users.set({name: name, connectionRequest: this.state.mySdpId});
+            const users = this.state.firebase.users.ref('users/' + userId);
+            users.set({ name: name, connectionRequest: this.state.mySdpId, caller: this.state.myFirebaseKey });
         });
     }
-    
+
     onInit() {
         const peer = new Peer({
             initiator: true,
@@ -95,11 +97,26 @@ class WebRTC extends Component {
         });
     }
 
-    onCalling(){
-        this.state.firebase.users.ref('users/'+this.state.myFirebaseKey+'/connectionRequest').on('value', (snapshot) => {
-            const connectionRequest = snapshot.val();
-            alert(connectionRequest);
+    onCalling(myFirebaseKey) {
+
+        console.log(myFirebaseKey);
+        this.state.firebase.users.ref('/users/'+myFirebaseKey).on('value', (snapshot) => {
+            const connectionRequest = snapshot.val().connectionRequest;
+            const caller = snapshot.val().caller;
+            if(connectionRequest)
+            {
+                console.log(caller+' calling...');
+                this.setState({otherSdpId: connectionRequest, caller: caller, calling: true});
+                this.state.peer.signal(connectionRequest);
+            }
         })
+    }
+
+    onPickup(){
+        console.log('pickup method');
+        const callerUserId = this.state.caller;
+        const users = this.state.firebase.users.ref('users/' + callerUserId);
+        users.update({ connectionRequest: this.state.mySdpId, caller: this.state.myFirebaseKey }); 
     }
 
     onChangeOtherId(e) {
@@ -125,11 +142,10 @@ class WebRTC extends Component {
         });
     }
 
-
     render() {
 
         const mySDP = JSON.stringify(this.state.mySdpId);
-        console.log(this.state.users);
+        const otherSDP = JSON.stringify(this.state.otherSdpId);
         if (!this.state.logged) {
             return (
                 <div>
@@ -147,19 +163,21 @@ class WebRTC extends Component {
                     }
                     <br />
                     <label>Other ID:</label>
-                    <textarea id="otherId" onChange={(e) => this.onChangeOtherId(e)}>{this.state.something}</textarea><br />
-                    <button onClick={() => this.onConnect()}>Connect</button>
+                    <input id="otherId" onChange={(e) => this.onChangeOtherId(e)} value={otherSDP} /><br />
+                   {/*} <button onClick={() => this.onConnect()}>Connect</button> */ }
                     <input type="text" /><button onClick={() => this.onSendMessage()}> send message</button>
-                    {/* wylistować urzytkownikow */}
+                    {/* wylistować uzytkownikow */}
                     <ul>
-                        {this.state.users ? 
-                            Object.keys(this.state.users).map((userId, key) => 
-                            <li onClick={() => 
-                                this.onConnectionRequest(userId, this.state.users[userId].name)} key={key}>
-                                {this.state.myFirebaseKey === userId ? <b>{this.state.users[userId].name}</b>: this.state.users[userId].name}
-                                </li>) 
-                                : null}
+                        {this.state.users ?
+                            Object.keys(this.state.users).map((userId, key) =>
+                                <li onClick={() =>
+                                    this.onConnectionRequest(userId, this.state.users[userId].name)} key={key}>
+                                    {this.state.myFirebaseKey === userId ? <b>{this.state.users[userId].name}</b> : this.state.users[userId].name}
+                                </li>)
+                            : null}
                     </ul>
+
+                    { this.state.calling ? <div><button onClick={()=> this.onPickup()}>Pickup</button><button>Cancel</button></div> :  null }
                 </div>);
         }
 
