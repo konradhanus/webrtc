@@ -16,7 +16,8 @@ class WebRTC extends Component {
                 trickle: false
             }),
             firebase: { users: firebase.database() },
-            users: null
+            users: null, 
+            myFirebaseKey: null
         }
     }
 
@@ -44,8 +45,10 @@ class WebRTC extends Component {
         }
 
 
-
-        users.push(user);
+        // Get a key for a new Post.
+        var newUserKey = users.push(user).key;
+        this.setState({myFirebaseKey: newUserKey});
+        //users.push(user);
     }
 
     componentDidMount() {
@@ -53,6 +56,7 @@ class WebRTC extends Component {
         this.onGetUsers();
         this.onConnect();
         this.onReciveMessage();
+        this.onCalling();
     }
 
     onConnect() {
@@ -89,6 +93,13 @@ class WebRTC extends Component {
         peer.on('signal', (data) => {
             this.setState({ mySdpId: data });
         });
+    }
+
+    onCalling(){
+        this.state.firebase.users.ref('users/'+this.state.myFirebaseKey+'/connectionRequest').on('value', (snapshot) => {
+            const connectionRequest = snapshot.val();
+            alert(connectionRequest);
+        })
     }
 
     onChangeOtherId(e) {
@@ -141,7 +152,13 @@ class WebRTC extends Component {
                     <input type="text" /><button onClick={() => this.onSendMessage()}> send message</button>
                     {/* wylistować urzytkownikow */}
                     <ul>
-                        {this.state.users ? Object.keys(this.state.users).map((userId, key) => <li onClick={() => this.onConnectionRequest(userId, this.state.users[userId].name)} key={key}>{this.state.users[userId].name}</li>) : null}
+                        {this.state.users ? 
+                            Object.keys(this.state.users).map((userId, key) => 
+                            <li onClick={() => 
+                                this.onConnectionRequest(userId, this.state.users[userId].name)} key={key}>
+                                {this.state.myFirebaseKey === userId ? <b>{this.state.users[userId].name}</b>: this.state.users[userId].name}
+                                </li>) 
+                                : null}
                     </ul>
                 </div>);
         }
