@@ -27,6 +27,7 @@ class WebRTC extends Component {
     onGetUsers() {
         this.state.firebase.users.ref('users').on('value', (snapshot) => {
             const newUsers = snapshot.val();
+            console.log('something was changed');
             this.setState({ users: newUsers })
         })
     }
@@ -53,9 +54,7 @@ class WebRTC extends Component {
     componentDidMount() {
 
         this.onGetUsers();
-        
-      
-       
+        this.onConnect();
     }
 
     onConnect() {
@@ -69,6 +68,7 @@ class WebRTC extends Component {
 
         peer.on('signal', (data) => {
             this.setState({ mySdpId: data });
+            alert('send data to another');
         });
 
         this.onReciveMessage(peer);
@@ -87,6 +87,8 @@ class WebRTC extends Component {
             const users = this.state.firebase.users.ref('users/' + userId);
             users.set({ name: name, connectionRequest: this.state.mySdpId, caller: this.state.myFirebaseKey });
         });
+
+        this.onReciveMessage(peer);
     }
 
     onInit() {
@@ -127,6 +129,7 @@ class WebRTC extends Component {
     }
 
     onChangeOtherId(e) {
+        alert('nowe dane');
         try {
             const otherSdpId = JSON.parse(e.target.value);
             this.setState({ otherSdpId: otherSdpId });
@@ -163,7 +166,7 @@ class WebRTC extends Component {
         } else {
             return (
                 <div>
-                    <label>Your ID:</label>
+                    {/*<label>Your ID:</label>
                     <input id="yourId" value={mySDP} />
                     {this.state.mySdpId ? null :
                         <button onClick={() => this.onInit()}>Init</button>
@@ -171,8 +174,8 @@ class WebRTC extends Component {
                     <br />
                     <label>Other ID:</label>
                     <input id="otherId" onChange={(e) => this.onChangeOtherId(e)} value={otherSDP} /><br />
-                   { <button onClick={() => this.onConnect()}>Connect</button>  }
-                    <input type="text" /><button onClick={() => this.onSendMessage()}> send message</button>
+                   { <button onClick={() => this.onConnect()}>Connect</button>  }*/}
+                <input type="text" /><button onClick={() => this.onSendMessage()}> send message</button> 
                     {/* wylistować uzytkownikow */}
                     <ul>
                         {this.state.users ?
