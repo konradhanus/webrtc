@@ -16,8 +16,13 @@ class WebRTC extends Component {
             users: null,
             myFirebaseKey: null, 
             calling: false,
-            caller: null
+            caller: null, 
+            message: null
         }
+    }
+
+    onChangeMessage(e){
+        this.setState({message: e.target.value});
     }
 
     onChangeName(e) {
@@ -27,7 +32,7 @@ class WebRTC extends Component {
     onGetUsers() {
         this.state.firebase.users.ref('users').on('value', (snapshot) => {
             const newUsers = snapshot.val();
-            console.log('something was changed');
+           // console.log('something was changed');
             this.setState({ users: newUsers })
         })
     }
@@ -133,22 +138,24 @@ class WebRTC extends Component {
         try {
             const otherSdpId = JSON.parse(e.target.value);
             this.setState({ otherSdpId: otherSdpId });
-            console.log(otherSdpId);
+            //console.log(otherSdpId);
             this.state.peer.signal(otherSdpId);
 
         } catch (e) {
-            console.log('to nie jest json')
+           // console.log('to nie jest json')
         }
     }
 
     onSendMessage() {
-        console.log('send message');
-        this.state.peer.send('wiadomosc');
+       
+        this.state.peer.send(this.state.message);
+         console.info(this.state.message);
     }
 
     onReciveMessage(peer) {
         peer.on('data', function (data) {
-            alert(data);
+            var string = new TextDecoder("utf-8").decode(data);
+            console.warn(string);
         });
     }
 
@@ -175,8 +182,11 @@ class WebRTC extends Component {
                     <label>Other ID:</label>
                     <input id="otherId" onChange={(e) => this.onChangeOtherId(e)} value={otherSDP} /><br />
                    { <button onClick={() => this.onConnect()}>Connect</button>  }*/}
-                <input type="text" /><button onClick={() => this.onSendMessage()}> send message</button> 
-                    {/* wylistować uzytkownikow */}
+                <input type="text" onChange={(e) => this.onChangeMessage(e)}/>
+                <button onClick={() => this.onSendMessage()}> send message</button> 
+                   
+                    { this.state.calling ? <div><button onClick={()=> this.onPickup()}>Pickup</button><button>Cancel</button></div> :  null }
+                     {/* wylistować uzytkownikow */}
                     <ul>
                         {this.state.users ?
                             Object.keys(this.state.users).map((userId, key) =>
@@ -187,7 +197,7 @@ class WebRTC extends Component {
                             : null}
                     </ul>
 
-                    { this.state.calling ? <div><button onClick={()=> this.onPickup()}>Pickup</button><button>Cancel</button></div> :  null }
+                    
                 </div>);
         }
 
